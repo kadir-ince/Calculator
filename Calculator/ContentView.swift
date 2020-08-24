@@ -9,7 +9,10 @@ import SwiftUI
 
 struct ContentView: View {
     @State var typedString = "0"
-    @Environment(\.colorScheme) var colorScheme
+    @State var performingMath = false
+    @State var lastOperation: Operation? = nil
+    @State var previousNumber: Double = 0
+    @State var currentCalculation: Double = 0
 
     var body: some View {
         GeometryReader { _ in
@@ -51,12 +54,12 @@ struct ContentView: View {
                 Text("")
                     .frame(width: screen.width/4.5, height: screen.height * 0.1)
             }
-            Button(action: {}) {
+            Button(action: { reset() }) {
                 Text("C")
                     .frame(width: screen.width/4.5, height: screen.height * 0.1)
                     .foregroundColor(Color("ClearButton"))
             }
-            Button(action: {}) {
+            Button(action: { tapped(operation: .division) }) {
                 Text("/")
                     .frame(width: screen.width/4.5, height: screen.height * 0.1)
                     .foregroundColor(.red)
@@ -72,17 +75,17 @@ struct ContentView: View {
                 }) {
                     Text(number)
                         .frame(width: screen.width/4.5, height: screen.height * 0.1)
-                        .foregroundColor(.gray)
+                        .foregroundColor(Color("Numbers"))
                 }
             }
             if operation != nil {
-                Button(action: {}) {
+                Button(action: { tapped(operation: operation!) }) {
                     Text(operation!.displayedString)
                         .frame(width: screen.width/4.5, height: screen.height * 0.1)
                         .foregroundColor(.red)
                 }
             } else {
-                Button(action: {}) {
+                Button(action: { showResult() }) {
                     Text("=")
                         .frame(width: screen.width/4.5, height: screen.height * 0.1)
                         .background(Color.red)
@@ -93,21 +96,63 @@ struct ContentView: View {
             }
         }
     }
-    
+
     func tapped(number: String) {
         if number == "0" || number == "00" {
             guard typedString != "0" else { return }
             typedString += number
-        } else if  number == "."{
-            guard typedString != "." else {return}
+        } else if number == "." {
+            guard typedString != "." else { return }
             typedString += number
         } else {
-            if  typedString == "0" {
-                 typedString = number
+            if typedString == "0" {
+                typedString = number
             } else {
-                 typedString += number
+                typedString += number
             }
         }
+    }
+
+    func tapped(operation: Operation) {
+        if performingMath, let lastOperation = self.lastOperation {
+            calculate(for: lastOperation)
+        } else {
+            previousNumber = Double(typedString) ?? 0
+        }
+        // started operation
+        lastOperation = operation
+        typedString = "0"
+        performingMath = true
+    }
+
+    func calculate(for operation: Operation) {
+        let currentNumber = Double(typedString) ?? 0
+        switch operation {
+        case .addition:
+            currentCalculation = previousNumber + currentNumber
+        case .substraction:
+            currentCalculation = previousNumber - currentNumber
+        case .multiplication:
+            currentCalculation = previousNumber * currentNumber
+        case .division:
+            currentCalculation = previousNumber/currentNumber
+        }
+        previousNumber = currentNumber
+        performingMath = false
+    }
+
+    func reset() {
+        typedString = "0"
+        performingMath = false
+        currentCalculation = 0
+        previousNumber = 0
+        lastOperation = nil
+    }
+
+    func showResult() {
+        guard let lastOperation = lastOperation, performingMath else { return }
+        calculate(for: lastOperation)
+        typedString = String(currentCalculation)
     }
 }
 
